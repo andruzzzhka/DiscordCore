@@ -12,6 +12,10 @@ namespace DiscordCore
     {
         public void OnActiveSceneChanged(Scene prevScene, Scene nextScene)
         {
+            if (nextScene.name.Contains("Menu"))
+            {
+
+            }
 
         }
 
@@ -42,7 +46,7 @@ namespace DiscordCore
 
         public void OnUpdate()
         {
-
+            DiscordManager.Instance.Update();
         }
     }
 }

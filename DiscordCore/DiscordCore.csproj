@@ -60,8 +60,14 @@
     <Compile Include="DiscordAPI\LobbyManager.cs" />
     <Compile Include="DiscordAPI\StorageManager.cs" />
     <Compile Include="DiscordAPI\StoreManager.cs" />
+    <Compile Include="DiscordClient.cs" />
+    <Compile Include="DiscordInstance.cs" />
+    <Compile Include="DiscordManager.cs" />
     <Compile Include="Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="manifest.json" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
