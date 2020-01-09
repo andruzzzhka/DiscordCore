@@ -10,6 +10,13 @@ namespace DiscordCore
 {
     public class Plugin : IBeatSaberPlugin
     {
+        internal static IPA.Logging.Logger log;
+
+        public void Init(IPA.Logging.Logger log)
+        {
+            Plugin.log = log;
+        }
+
         public void OnActiveSceneChanged(Scene prevScene, Scene nextScene)
         {
             if (nextScene.name.Contains("Menu"))
@@ -47,6 +54,7 @@ namespace DiscordCore
         public void OnUpdate()
         {
             DiscordManager.Instance.Update();
+            DiscordClient.RunCallbacks();
         }
     }
 }

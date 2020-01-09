@@ -5,29 +5,39 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using static Discord.ActivityManager;
 
 namespace DiscordCore
 {
-    public class DiscordInstance
+    public struct DiscordSettings
     {
         public string modId;
         public string modName;
         public Sprite modIcon;
         public long appId;
 
-        public int priority;
+        public bool handleInvites;
+    }
 
-        public bool activityValid;
-        public Activity activity;
+    public class DiscordInstance
+    {
+        public event ActivityJoinHandler OnActivityJoin;
+        public event ActivityJoinRequestHandler OnActivityJoinRequest;
+        public event ActivityInviteHandler OnActivityInvite;
+        public event ActivitySpectateHandler OnActivitySpectate;
 
-        public DiscordInstance(string modId, string modName, Sprite modIcon, long appId)
+        public DiscordSettings settings;
+
+        public int Priority { get; internal set; }
+
+        internal bool activityValid;
+        internal Activity activity;
+
+        public DiscordInstance(DiscordSettings settings)
         {
-            this.modId = modId;
-            this.modName = modName;
-            this.modIcon = modIcon;
-            this.appId = appId;
+            this.settings = settings;
 
-            priority = 0;
+            Priority = 0;
         }
 
         public void UpdateActivity(Activity activity)
@@ -46,5 +56,11 @@ namespace DiscordCore
         {
             DiscordManager.Instance.DestroyInstance(this);
         }
+
+        internal void CallActivityJoin(string secret) { OnActivityJoin?.Invoke(secret); }
+        internal void CallActivityJoinRequest(ref User user) { OnActivityJoinRequest?.Invoke(ref user); }
+        internal void CallActivityInvite(ActivityActionType actionType, ref User user, ref Activity activity) { OnActivityInvite?.Invoke(actionType, ref user, ref activity); }
+        internal void CallActivitySpectate(string secret) { OnActivitySpectate?.Invoke(secret); }
+
     }
 }
