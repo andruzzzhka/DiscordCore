@@ -33,28 +33,36 @@ namespace DiscordCore
         {
             if((newAppId < 0 ? DefaultAppID : newAppId) != CurrentAppID)
             {
-                if(_discordClient != null)
+                try
                 {
-                    var oldActManager = _discordClient.GetActivityManager();
-                    oldActManager.OnActivityInvite -= OnActivityInvite;
-                    oldActManager.OnActivityJoin -= OnActivityJoin;
-                    oldActManager.OnActivityJoinRequest -= OnActivityJoinRequest;
-                    oldActManager.OnActivitySpectate -= OnActivitySpectate;
+                    if (_discordClient != null)
+                    {
+                        var oldActManager = _discordClient.GetActivityManager();
+                        oldActManager.OnActivityInvite -= OnActivityInvite;
+                        oldActManager.OnActivityJoin -= OnActivityJoin;
+                        oldActManager.OnActivityJoinRequest -= OnActivityJoinRequest;
+                        oldActManager.OnActivitySpectate -= OnActivitySpectate;
 
-                    _discordClient.Dispose();
+                        _discordClient.Dispose();
+                    }
+
+                    _discordClient = new Discord.Discord(newAppId, (ulong)CreateFlags.NoRequireDiscord);
+                    CurrentAppID = newAppId;
+
+                    _discordClient.SetLogHook(LogLevel.Debug, LogCallback);
+
+                    var newActManager = _discordClient.GetActivityManager();
+                    newActManager.OnActivityInvite += OnActivityInvite;
+                    newActManager.OnActivityJoin += OnActivityJoin;
+                    newActManager.OnActivityJoinRequest += OnActivityJoinRequest;
+                    newActManager.OnActivitySpectate += OnActivitySpectate;
+                    newActManager.RegisterSteam(620980);
                 }
-
-                _discordClient = new Discord.Discord(newAppId, (ulong)CreateFlags.NoRequireDiscord);
-                CurrentAppID = newAppId;
-
-                _discordClient.SetLogHook(LogLevel.Debug, LogCallback);
-
-                var newActManager = _discordClient.GetActivityManager();
-                newActManager.OnActivityInvite += OnActivityInvite;
-                newActManager.OnActivityJoin += OnActivityJoin;
-                newActManager.OnActivityJoinRequest += OnActivityJoinRequest;
-                newActManager.OnActivitySpectate += OnActivitySpectate;
-                newActManager.RegisterSteam(620980);
+                catch(Exception e)
+                {
+                    Plugin.active = false;
+                    Plugin.deactivationReason = e.ToString();
+                }
             }
         }
 

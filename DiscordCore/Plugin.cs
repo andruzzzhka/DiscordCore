@@ -12,6 +12,11 @@ namespace DiscordCore
     {
         internal static IPA.Logging.Logger log;
 
+        public static bool active = true;
+        public static string deactivationReason;
+
+        private static float lastCheckTime;
+
         public void Init(IPA.Logging.Logger log)
         {
             Plugin.log = log;
@@ -19,10 +24,6 @@ namespace DiscordCore
 
         public void OnActiveSceneChanged(Scene prevScene, Scene nextScene)
         {
-            if (nextScene.name.Contains("Menu"))
-            {
-
-            }
 
         }
 
@@ -53,8 +54,19 @@ namespace DiscordCore
 
         public void OnUpdate()
         {
-            DiscordManager.Instance.Update();
-            DiscordClient.RunCallbacks();
+            if (active)
+            {
+                DiscordManager.Instance.Update();
+                DiscordClient.RunCallbacks();
+            }
+            else
+            {
+                if (UnityEngine.Time.time - lastCheckTime >= 10f)
+                {
+                    lastCheckTime = UnityEngine.Time.time;
+                    log.Error("DiscordCore is not active! Reason: " + deactivationReason);
+                }
+            }
         }
     }
 }
