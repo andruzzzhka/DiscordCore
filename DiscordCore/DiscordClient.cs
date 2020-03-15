@@ -75,51 +75,37 @@ namespace DiscordCore
             }
         }
 
+        /// <summary>
+        /// If not already enabled, creates a new DiscordClient. Disposes of the old one if it exists.
+        /// </summary>
+        /// <exception cref="ResultException"></exception>
         internal static void Enable()
         {
             if (Enabled)
                 return;
-
+            if (_discordClient != null)
+            {
+                DisposeClient(_discordClient);
+                _discordClient = null;
+            }
+            CurrentAppID = _appIdWhenDisabled < 0 ? DefaultAppID : _appIdWhenDisabled;
             try
             {
-                if (_discordClient != null)
-                {
-                    DisposeClient(_discordClient);
-                    _discordClient = null;
-                }
-                CurrentAppID = _appIdWhenDisabled < 0 ? DefaultAppID : _appIdWhenDisabled;
                 _discordClient = CreateClient(CurrentAppID);
 
                 var newActManager = _discordClient.GetActivityManager();
                 LinkActivityEvents(newActManager);
                 newActManager.RegisterSteam(620980);
-                Enabled = true;
-                DiscordManager.active = true;
-                DiscordManager.deactivationReason = string.Empty;
-                Plugin.log.Info($"DiscordClient enabled.");
             }
-            catch (Discord.ResultException e)
+            catch
             {
-                if (e.Result != Result.NotRunning && e.Result != Result.InternalError)
-                {
-                    Plugin.log.Error($"Error in RunCallbacks: {e.Result} - {e.Message}");
-                    Plugin.log.Debug(e);
-                }
-                else
-                {
-                    Plugin.log.Info("Discord is not running.");
-                }
                 Disable(true);
-                DiscordManager.active = false;
-                DiscordManager.SetDeactivationReasonFromException(e);
+                throw;
             }
-            catch (Exception e)
-            {
-                Plugin.log.Debug(e);
-                Disable(true);
-                DiscordManager.active = false;
-                DiscordManager.SetDeactivationReasonFromException(e);
-            }
+            Enabled = true;
+            DiscordManager.active = true;
+            DiscordManager.deactivationReason = string.Empty;
+            Plugin.log.Info($"DiscordClient enabled.");
         }
 
         private static Discord.Discord CreateClient(long appId)
@@ -152,13 +138,16 @@ namespace DiscordCore
                 }
                 catch (Discord.ResultException e)
                 {
-                    if (e.Result != Result.NotRunning)
+                    if (e.Result != Result.NotRunning && e.Result != Result.InternalError)
                     {
-                        Plugin.log.Error($"Error in RunCallbacks: {e.Result} - {e.Message}");
+                        Plugin.log.Error($"Changing AppID: {e.Message}");
                         Plugin.log.Debug(e);
                     }
                     else
                     {
+#if DEBUG
+                        Plugin.log.Debug(e);
+#endif
                         Plugin.log.Info("Discord is not running.");
                     }
                     Disable(true);
@@ -181,26 +170,20 @@ namespace DiscordCore
             Plugin.log.Log(_logLevels[level], $"[DISCORD] {message}");
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <exception cref="ResultException"></exception>
         public static void RunCallbacks()
         {
             try
             {
                 _discordClient?.RunCallbacks();
             }
-            catch (Discord.ResultException e)
+            catch
             {
-                if (e.Result == Result.NotRunning)
-                {
-                    Plugin.log.Info("Discord is no longer running.");
-                    Disable(true);
-                }
-                else
-                {
-                    Plugin.log.Error($"Error in RunCallbacks: {e.Result} - {e.Message}");
-                    Plugin.log.Debug(e);
-                }
-                DiscordManager.active = false;
-                DiscordManager.SetDeactivationReasonFromException(e);
+                Disable(true);
+                throw;
             }
         }
 
