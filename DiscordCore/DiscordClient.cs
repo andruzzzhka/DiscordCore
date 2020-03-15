@@ -18,17 +18,12 @@ namespace DiscordCore
         internal static event ActivityInviteHandler OnActivityInvite;
         internal static event ActivitySpectateHandler OnActivitySpectate;
 
-        public static long CurrentAppID { get; private set; }
+        public static long CurrentAppID { get; private set; } = -1;
         public static bool Enabled { get; private set; }
         private static long _appIdWhenDisabled;
         private static Discord.Discord _discordClient;
         private static Dictionary<LogLevel, Logger.Level> _logLevels = new Dictionary<LogLevel, Logger.Level>() { { LogLevel.Debug, Logger.Level.Debug }, { LogLevel.Info, Logger.Level.Info }, { LogLevel.Warn, Logger.Level.Warning }, { LogLevel.Error, Logger.Level.Error } };
 
-        static DiscordClient()
-        {
-            CurrentAppID = -1;
-            ChangeAppID(DefaultAppID);
-        }
         private static void LinkActivityEvents(ActivityManager activityManager)
         {
             activityManager.OnActivityInvite += OnActivityInvite;
@@ -138,28 +133,8 @@ namespace DiscordCore
                 }
                 catch (Discord.ResultException e)
                 {
-                    if (e.Result != Result.NotRunning && e.Result != Result.InternalError)
-                    {
-                        Plugin.log.Error($"Changing AppID: {e.Message}");
-                        Plugin.log.Debug(e);
-                    }
-                    else
-                    {
-#if DEBUG
-                        Plugin.log.Debug(e);
-#endif
-                        Plugin.log.Info("Discord is not running.");
-                    }
                     Disable(true);
-                    DiscordManager.active = false;
-                    DiscordManager.SetDeactivationReasonFromException(e);
-                }
-                catch (Exception e)
-                {
-                    Plugin.log.Debug(e);
-                    Disable(true);
-                    DiscordManager.active = false;
-                    DiscordManager.SetDeactivationReasonFromException(e);
+                    throw;
                 }
             }
         }

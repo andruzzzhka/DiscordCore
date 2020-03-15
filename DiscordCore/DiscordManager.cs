@@ -21,11 +21,11 @@ namespace DiscordCore
 
         protected void Awake()
         {
+            Plugin.log.Debug($"{nameof(DiscordManager)} Awake");
             DiscordClient.OnActivityInvite += DiscordClient_OnActivityInvite;
             DiscordClient.OnActivityJoin += DiscordClient_OnActivityJoin;
             DiscordClient.OnActivityJoinRequest += DiscordClient_OnActivityJoinRequest;
             DiscordClient.OnActivitySpectate += DiscordClient_OnActivitySpectate;
-            Plugin.log.Debug($"{nameof(DiscordManager)} Awake");
         }
 
         public static void SetDeactivationReasonFromException(Exception e)
@@ -49,7 +49,6 @@ namespace DiscordCore
             if (_activeInstances.Contains(instance))
                 _activeInstances.Remove(instance);
         }
-
         public void Update()
         {
             if (!active && deactivationReason == DiscordClient.DisabledReason) return;
@@ -67,40 +66,15 @@ namespace DiscordCore
                 }
                 catch (ResultException e)
                 {
-                    DiscordManager.active = false;
-                    DiscordManager.SetDeactivationReasonFromException(e);
-                    if (lastCheckDeactivationReason == deactivationReason) return; // Already messaged this.
-                    lastCheckDeactivationReason = deactivationReason;
-                    if (e.Result != Result.NotRunning && e.Result != Result.InternalError)
-                    {
-                        Plugin.log.Error($"Error starting DiscordClient: {e.Message}");
-                        Plugin.log.Debug(e);
-                    }
-                    else
-                    {
-                        Plugin.log.Info("Discord is not running.");
-#if DEBUG
-                        Plugin.log.Debug(e);
-#endif
-                    }
+                    ProcessResultException(e, "Error starting DiscordClient: ");
                 }
                 catch (Exception e)
                 {
                     Plugin.log.Debug(e);
                     DiscordManager.active = false;
                     DiscordManager.SetDeactivationReasonFromException(e);
+                    lastCheckDeactivationReason = deactivationReason;
                 }
-                //                    if (lastCheckDeactivationReason != deactivationReason)
-                //                    {
-                //                        Plugin.log.Error("DiscordCore is not active! Reason: " + deactivationReason);
-                //                        lastCheckDeactivationReason = deactivationReason;
-                //                    }
-                //#if DEBUG
-                //                    else
-                //                    {
-                //                        Plugin.log.Debug("DiscordCore is still not active: " + deactivationReason);
-                //                    }
-                //#endif
             }
             if (active && Time.time - lastUpdateTime >= 5f)
             {
@@ -113,17 +87,7 @@ namespace DiscordCore
                 }
                 catch (Discord.ResultException e)
                 {
-                    if (e.Result == Result.NotRunning)
-                    {
-                        Plugin.log.Info("Unable to run callbacks: Discord is no longer running.");
-                    }
-                    else
-                    {
-                        Plugin.log.Error($"Error in RunCallbacks: {e.Message}");
-                        Plugin.log.Debug(e);
-                    }
-                    DiscordManager.active = false;
-                    DiscordManager.SetDeactivationReasonFromException(e);
+                    ProcessResultException(e, "Error in RunCallbacks: ");
                 }
             }
         }
@@ -138,28 +102,14 @@ namespace DiscordCore
             }
             catch (ResultException e)
             {
-                DiscordManager.active = false;
-                DiscordManager.SetDeactivationReasonFromException(e);
-                if (lastCheckDeactivationReason == deactivationReason) return; // Already messaged this.
-                lastCheckDeactivationReason = deactivationReason;
-                if (e.Result != Result.NotRunning && e.Result != Result.InternalError)
-                {
-                    Plugin.log.Error($"Error starting DiscordClient: {e.Message}");
-                    Plugin.log.Debug(e);
-                }
-                else
-                {
-                    Plugin.log.Info("Discord is not running.");
-#if DEBUG
-                    Plugin.log.Debug(e);
-#endif
-                }
+                ProcessResultException(e, "Error starting DiscordClient: ");
             }
             catch (Exception e)
             {
                 Plugin.log.Debug(e);
                 DiscordManager.active = false;
                 DiscordManager.SetDeactivationReasonFromException(e);
+                lastCheckDeactivationReason = deactivationReason;
             }
         }
 
@@ -196,6 +146,27 @@ namespace DiscordCore
             {
                 DiscordClient.ChangeAppID(-1);
                 DiscordClient.GetActivityManager().ClearActivity((result) => { });
+            }
+        }
+
+        private void ProcessResultException(ResultException e, string messagePrefix)
+        {
+
+            DiscordManager.active = false;
+            DiscordManager.SetDeactivationReasonFromException(e);
+            if (lastCheckDeactivationReason == deactivationReason) return; // Already messaged this.
+            lastCheckDeactivationReason = deactivationReason;
+            if (e.Result != Result.NotRunning && e.Result != Result.InternalError)
+            {
+                Plugin.log.Error(messagePrefix + e.Message);
+                Plugin.log.Debug(e);
+            }
+            else
+            {
+                Plugin.log.Info(messagePrefix + "Discord is not running.");
+#if DEBUG
+                Plugin.log.Debug(e);
+#endif
             }
         }
 
