@@ -12,14 +12,15 @@ namespace DiscordCore
     public static class DiscordClient
     {
         public const long DefaultAppID = 658039028825718827;
-
+        public const string DisabledReason = "Disabled";
         internal static event ActivityJoinHandler OnActivityJoin;
         internal static event ActivityJoinRequestHandler OnActivityJoinRequest;
         internal static event ActivityInviteHandler OnActivityInvite;
         internal static event ActivitySpectateHandler OnActivitySpectate;
 
         public static long CurrentAppID { get; private set; }
-
+        public static bool Enabled { get; private set; }
+        private static long _appIdWhenDisabled;
         private static Discord.Discord _discordClient;
         private static Dictionary<LogLevel, Logger.Level> _logLevels = new Dictionary<LogLevel, Logger.Level>() { { LogLevel.Debug, Logger.Level.Debug }, { LogLevel.Info, Logger.Level.Info }, { LogLevel.Warn, Logger.Level.Warning }, { LogLevel.Error, Logger.Level.Error } };
 
@@ -28,40 +29,148 @@ namespace DiscordCore
             CurrentAppID = -1;
             ChangeAppID(DefaultAppID);
         }
+        private static void LinkActivityEvents(ActivityManager activityManager)
+        {
+            activityManager.OnActivityInvite += OnActivityInvite;
+            activityManager.OnActivityJoin += OnActivityJoin;
+            activityManager.OnActivityJoinRequest += OnActivityJoinRequest;
+            activityManager.OnActivitySpectate += OnActivitySpectate;
+        }
+
+        private static void UnlinkActivityEvents(ActivityManager activityManager)
+        {
+            activityManager.OnActivityInvite -= OnActivityInvite;
+            activityManager.OnActivityJoin -= OnActivityJoin;
+            activityManager.OnActivityJoinRequest -= OnActivityJoinRequest;
+            activityManager.OnActivitySpectate -= OnActivitySpectate;
+        }
+
+        private static void DisposeClient(Discord.Discord client)
+        {
+            UnlinkActivityEvents(client.GetActivityManager());
+            client.Dispose();
+        }
+
+        internal static void Disable(bool hasError = false)
+        {
+            _appIdWhenDisabled = CurrentAppID;
+            CurrentAppID = -1;
+            if (_discordClient != null)
+            {
+                DisposeClient(_discordClient);
+                _discordClient = null;
+            }
+            if (Enabled)
+            {
+                Enabled = false;
+                if (!hasError)
+                {
+                    DiscordManager.deactivationReason = DisabledReason;
+                    Plugin.log.Info($"DiscordClient disabled.");
+                }
+                else
+                {
+                    Plugin.log.Info($"DiscordClient disabled by error.");
+                }
+            }
+        }
+
+        internal static void Enable()
+        {
+            if (Enabled)
+                return;
+
+            try
+            {
+                if (_discordClient != null)
+                {
+                    DisposeClient(_discordClient);
+                    _discordClient = null;
+                }
+                CurrentAppID = _appIdWhenDisabled < 0 ? DefaultAppID : _appIdWhenDisabled;
+                _discordClient = CreateClient(CurrentAppID);
+
+                var newActManager = _discordClient.GetActivityManager();
+                LinkActivityEvents(newActManager);
+                newActManager.RegisterSteam(620980);
+                Enabled = true;
+                DiscordManager.active = true;
+                DiscordManager.deactivationReason = string.Empty;
+                Plugin.log.Info($"DiscordClient enabled.");
+            }
+            catch (Discord.ResultException e)
+            {
+                if (e.Result != Result.NotRunning && e.Result != Result.InternalError)
+                {
+                    Plugin.log.Error($"Error in RunCallbacks: {e.Result} - {e.Message}");
+                    Plugin.log.Debug(e);
+                }
+                else
+                {
+                    Plugin.log.Info("Discord is not running.");
+                }
+                Disable(true);
+                DiscordManager.active = false;
+                DiscordManager.SetDeactivationReasonFromException(e);
+            }
+            catch (Exception e)
+            {
+                Plugin.log.Debug(e);
+                Disable(true);
+                DiscordManager.active = false;
+                DiscordManager.SetDeactivationReasonFromException(e);
+            }
+        }
+
+        private static Discord.Discord CreateClient(long appId)
+        {
+            Discord.Discord client = new Discord.Discord(appId, (ulong)CreateFlags.NoRequireDiscord);
+            client.SetLogHook(LogLevel.Debug, LogCallback);
+            return client;
+        }
 
         public static void ChangeAppID(long newAppId)
         {
-            if((newAppId < 0 ? DefaultAppID : newAppId) != CurrentAppID)
+            if ((newAppId < 0 ? DefaultAppID : newAppId) != CurrentAppID)
             {
                 try
                 {
                     if (_discordClient != null)
                     {
-                        var oldActManager = _discordClient.GetActivityManager();
-                        oldActManager.OnActivityInvite -= OnActivityInvite;
-                        oldActManager.OnActivityJoin -= OnActivityJoin;
-                        oldActManager.OnActivityJoinRequest -= OnActivityJoinRequest;
-                        oldActManager.OnActivitySpectate -= OnActivitySpectate;
-
-                        _discordClient.Dispose();
+                        DisposeClient(_discordClient);
+                        _discordClient = null;
                     }
 
-                    _discordClient = new Discord.Discord(newAppId, (ulong)CreateFlags.NoRequireDiscord);
+                    _discordClient = CreateClient(newAppId);
                     CurrentAppID = newAppId;
 
-                    _discordClient.SetLogHook(LogLevel.Debug, LogCallback);
-
                     var newActManager = _discordClient.GetActivityManager();
-                    newActManager.OnActivityInvite += OnActivityInvite;
-                    newActManager.OnActivityJoin += OnActivityJoin;
-                    newActManager.OnActivityJoinRequest += OnActivityJoinRequest;
-                    newActManager.OnActivitySpectate += OnActivitySpectate;
+                    LinkActivityEvents(newActManager);
                     newActManager.RegisterSteam(620980);
+                    Enabled = true;
+                    DiscordManager.active = true;
                 }
-                catch(Exception e)
+                catch (Discord.ResultException e)
                 {
-                    Plugin.active = false;
-                    Plugin.deactivationReason = e.ToString();
+                    if (e.Result != Result.NotRunning)
+                    {
+                        Plugin.log.Error($"Error in RunCallbacks: {e.Result} - {e.Message}");
+                        Plugin.log.Debug(e);
+                    }
+                    else
+                    {
+                        Plugin.log.Info("Discord is not running.");
+                    }
+                    Disable(true);
+                    DiscordManager.active = false;
+                    DiscordManager.SetDeactivationReasonFromException(e);
+                }
+                catch (Exception e)
+                {
+                    Plugin.log.Debug(e);
+                    Disable(true);
+                    DiscordManager.active = false;
+                    DiscordManager.SetDeactivationReasonFromException(e);
                 }
             }
         }
@@ -74,7 +183,25 @@ namespace DiscordCore
 
         public static void RunCallbacks()
         {
-            _discordClient?.RunCallbacks();
+            try
+            {
+                _discordClient?.RunCallbacks();
+            }
+            catch (Discord.ResultException e)
+            {
+                if (e.Result == Result.NotRunning)
+                {
+                    Plugin.log.Info("Discord is no longer running.");
+                    Disable(true);
+                }
+                else
+                {
+                    Plugin.log.Error($"Error in RunCallbacks: {e.Result} - {e.Message}");
+                    Plugin.log.Debug(e);
+                }
+                DiscordManager.active = false;
+                DiscordManager.SetDeactivationReasonFromException(e);
+            }
         }
 
         public static AchievementManager GetAchievementManager() { return _discordClient?.GetAchievementManager(); }

@@ -8,30 +8,29 @@ using UnityEngine;
 
 namespace DiscordCore
 {
-    public class DiscordManager
+    public class DiscordManager : PersistentSingleton<DiscordManager>
     {
-        public static DiscordManager Instance 
-        {
-            get 
-            {
-                if (_instance == null)
-                {
-                    _instance = new DiscordManager();
-                }
-                return _instance; 
-            }
-        }
-        private static DiscordManager _instance;
+        public static bool active = true;
 
         private List<DiscordInstance> _activeInstances = new List<DiscordInstance>();
         private float lastUpdateTime;
 
-        public DiscordManager()
+        public static string deactivationReason;
+        private static string lastCheckDeactivationReason;
+        private static float lastCheckTime;
+
+        protected void Awake()
         {
             DiscordClient.OnActivityInvite += DiscordClient_OnActivityInvite;
             DiscordClient.OnActivityJoin += DiscordClient_OnActivityJoin;
             DiscordClient.OnActivityJoinRequest += DiscordClient_OnActivityJoinRequest;
             DiscordClient.OnActivitySpectate += DiscordClient_OnActivitySpectate;
+            Plugin.log.Debug($"{nameof(DiscordManager)} Awake");
+        }
+
+        public static void SetDeactivationReasonFromException(Exception e)
+        {
+            deactivationReason = e.Message;
         }
 
         public DiscordInstance CreateInstance(DiscordSettings settings)
@@ -53,13 +52,45 @@ namespace DiscordCore
 
         public void Update()
         {
-            if(Time.time - lastUpdateTime >= 5f)
+            if (!active && deactivationReason == DiscordClient.DisabledReason) return;
+            if(active && Time.time - lastUpdateTime >= 5f)
             {
                 lastUpdateTime = Time.time;
-
                 UpdateCurrentActivity();
-
+                DiscordClient.RunCallbacks();
             }
+            else if(!active)
+            {
+                if (UnityEngine.Time.time - lastCheckTime >= 10f)
+                {
+                    lastCheckTime = UnityEngine.Time.time;
+                    if (lastCheckDeactivationReason != deactivationReason)
+                    {
+                        Plugin.log.Error("DiscordCore is not active! Reason: " + deactivationReason);
+                        lastCheckDeactivationReason = deactivationReason;
+                    }
+#if DEBUG
+                    else
+                    {
+                        Plugin.log.Debug("DiscordCore is still not active: " + deactivationReason);
+                    }
+#endif
+                    DiscordClient.Enable();
+                }
+            }
+        }
+
+        public override void OnEnable()
+        {
+            base.OnEnable();
+            active = true;
+            DiscordClient.Enable();
+        }
+
+        public void OnDisable()
+        {
+            active = false;
+            DiscordClient.Disable();
         }
 
         private void UpdateCurrentActivity()
