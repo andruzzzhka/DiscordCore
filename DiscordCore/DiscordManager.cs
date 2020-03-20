@@ -23,7 +23,7 @@ namespace DiscordCore
         }
         private static DiscordManager _instance;
 
-        private List<DiscordInstance> _activeInstances = new List<DiscordInstance>();
+        internal List<DiscordInstance> _activeInstances = new List<DiscordInstance>();
         private float lastUpdateTime;
 
         public DiscordManager()
@@ -42,13 +42,18 @@ namespace DiscordCore
 
             _activeInstances.Add(instance);
 
+            Settings.instance.UpdateModsList();
+
             return instance;
         }
 
         public void DestroyInstance(DiscordInstance instance)
         {
             if (_activeInstances.Contains(instance))
+            {
                 _activeInstances.Remove(instance);
+                Settings.instance.UpdateModsList();
+            }
         }
 
         public void Update()

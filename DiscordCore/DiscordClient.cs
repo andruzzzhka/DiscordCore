@@ -58,7 +58,12 @@ namespace DiscordCore
                     newActManager.OnActivitySpectate += OnActivitySpectate;
                     newActManager.RegisterSteam(620980);
                 }
-                catch(Exception e)
+                catch (ResultException e)
+                {
+                    Plugin.active = false;
+                    Plugin.deactivationReason = e.Result.ToString();
+                }
+                catch (Exception e)
                 {
                     Plugin.active = false;
                     Plugin.deactivationReason = e.ToString();

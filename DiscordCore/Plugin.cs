@@ -1,9 +1,12 @@
-﻿using IPA;
+﻿using BeatSaberMarkupLanguage.Settings;
+using BS_Utils.Utilities;
+using IPA;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace DiscordCore
@@ -34,7 +37,12 @@ namespace DiscordCore
 
         public void OnApplicationStart()
         {
+            BSEvents.menuSceneLoadedFresh += BSEvents_menuSceneLoadedFresh;
+        }
 
+        private void BSEvents_menuSceneLoadedFresh()
+        {
+            BSMLSettings.instance.AddSettingsMenu("DiscordCore", "DiscordCore.UI.SettingsViewController.bsml", Settings.instance);
         }
 
         public void OnFixedUpdate()
@@ -54,18 +62,19 @@ namespace DiscordCore
 
         public void OnUpdate()
         {
+            if (UnityEngine.Time.time - lastCheckTime >= 10f)
+            {
+                if (!active)
+                {
+                    lastCheckTime = UnityEngine.Time.time;
+                    log.Debug("DiscordCore is not active! Reason: " + deactivationReason);
+                }
+            }
+
             if (active)
             {
                 DiscordManager.Instance.Update();
                 DiscordClient.RunCallbacks();
-            }
-            else
-            {
-                if (UnityEngine.Time.time - lastCheckTime >= 10f)
-                {
-                    lastCheckTime = UnityEngine.Time.time;
-                    log.Error("DiscordCore is not active! Reason: " + deactivationReason);
-                }
             }
         }
     }
