@@ -49,7 +49,11 @@ namespace DiscordCore
                     _discordClient = new Discord.Discord(newAppId, (ulong)CreateFlags.NoRequireDiscord);
                     CurrentAppID = newAppId;
 
+#if DEBUG
                     _discordClient.SetLogHook(LogLevel.Debug, LogCallback);
+#else
+                    _discordClient.SetLogHook(LogLevel.Info, LogCallback);
+#endif
 
                     var newActManager = _discordClient.GetActivityManager();
                     newActManager.OnActivityInvite += HandleActivityInvite;

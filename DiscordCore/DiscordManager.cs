@@ -39,16 +39,10 @@ namespace DiscordCore
         {
             DiscordInstance instance = new DiscordInstance(settings);
 
-            Plugin.log.Info($"Trying to register new mod: {settings.modId}");
-
             if (Config.Instance.ModStates.TryGetValue(settings.modId, out var state))
             {
-                Plugin.log.Info($"Found mod state: {state.Active}, {state.Priority}");
-
                 while (_activeInstances.Any(x => x.Priority == state.Priority))
                     state.Priority++;
-
-                Plugin.log.Info($"Modified mod state: {state.Active}, {state.Priority}");
 
                 instance.Priority = state.Priority;
                 instance.activityEnabled = state.Active;
@@ -58,8 +52,6 @@ namespace DiscordCore
             {
                 instance.Priority = _activeInstances.Count == 0 ? 0 : _activeInstances.Max(x => x.Priority) + 1;
                 instance.activityEnabled = true;
-
-                Plugin.log.Info($"Created mod state: true, {instance.Priority}");
 
                 Config.Instance.ModStates.Add(instance.settings.modId, new ModState() { Active = true, Priority = instance.Priority });
             }
