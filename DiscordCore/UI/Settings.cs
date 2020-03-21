@@ -1,5 +1,6 @@
 ﻿using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
+using BeatSaberMarkupLanguage.Parser;
 using BeatSaberMarkupLanguage.ViewControllers;
 using System;
 using System.Collections.Generic;
@@ -11,18 +12,18 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace DiscordCore
+namespace DiscordCore.UI
 {
     public class Settings : PersistentSingleton<Settings>
     {
         [UIValue("enable-plugin")]
-        public bool enablePlugin;
+        public bool enablePlugin { get { return Config.Instance.EnableDiscordCore; } set { Config.Instance.EnableDiscordCore = value; } }
         [UIValue("allow-join")]
-        public bool allowJoinRequests;
+        public bool allowJoinRequests { get { return Config.Instance.AllowJoin; } set { Config.Instance.AllowJoin = value; } }
         [UIValue("allow-spectator")]
-        public bool allowSpectatorRequests;
+        public bool allowSpectatorRequests { get { return Config.Instance.AllowSpectate; } set { Config.Instance.AllowSpectate = value; } }
         [UIValue("allow-invites")]
-        public bool allowInvites;
+        public bool allowInvites { get { return Config.Instance.AllowInvites; } set { Config.Instance.AllowInvites = value; } }
 
         [UIComponent("mods-list")]
         public CustomCellListTableData modsList;
@@ -37,32 +38,29 @@ namespace DiscordCore
             {
                 try
                 {
-                    if (DiscordManager.Instance._activeInstances != null)
+                    var instances = DiscordManager.Instance._activeInstances.OrderBy(y => y.Priority);
+
+                    if (modObjectsList.Count != DiscordManager.Instance._activeInstances.Count)
                     {
-                        var instances = DiscordManager.Instance._activeInstances.OrderBy(y => y.Priority);
+                        modObjectsList.Clear();
 
-                        if (modObjectsList.Count != DiscordManager.Instance._activeInstances.Count)
+                        foreach (var instance in instances)
                         {
-                            modObjectsList.Clear();
+                            var listObject = new ModListObject(instance);
 
-                            foreach (var instance in instances)
-                            {
-                                var listObject = new ModListObject(instance);
+                            listObject.activeStateChanged += ListObject_activeStateChanged;
+                            listObject.increasePriorityPressed += ListObject_increasePriorityPressed;
+                            listObject.decreasePriorityPressed += ListObject_decreasePriorityPressed;
 
-                                listObject.activeStateChanged += ListObject_activeStateChanged;
-                                listObject.increasePriorityPressed += ListObject_increasePriorityPressed;
-                                listObject.decreasePriorityPressed += ListObject_decreasePriorityPressed;
-
-                                modObjectsList.Add(listObject);
-                            }
-
-                            modsList.tableView.ReloadData();
+                            modObjectsList.Add(listObject);
                         }
-                        else
-                        {
-                            for (int i = 0; i < modObjectsList.Count; i++)
-                                (modObjectsList[i] as ModListObject).ReplaceModInstance(instances.ElementAt(i));
-                        }
+
+                        modsList.tableView.ReloadData();
+                    }
+                    else
+                    {
+                        for (int i = 0; i < modObjectsList.Count; i++)
+                            (modObjectsList[i] as ModListObject).ReplaceModInstance(instances.ElementAt(i));
                     }
                 }
                 catch (Exception e)
@@ -78,7 +76,11 @@ namespace DiscordCore
 
             if (nextInstance != null)
             {
-                sender.Priority = nextInstance.Priority - 1;
+                int temp = sender.Priority;
+                sender.Priority = nextInstance.Priority;
+                nextInstance.Priority = temp;
+                UpsateModState(sender);
+                UpsateModState(nextInstance);
                 UpdateModsList();
             }
         }
@@ -89,14 +91,28 @@ namespace DiscordCore
 
             if (prevInstance != null)
             {
-                sender.Priority = prevInstance.Priority + 1;
+                int temp = sender.Priority;
+                sender.Priority = prevInstance.Priority;
+                prevInstance.Priority = temp;
+                UpsateModState(sender);
+                UpsateModState(prevInstance);
                 UpdateModsList();
             }
         }
 
         private void ListObject_activeStateChanged(DiscordInstance sender, bool newState)
         {
+            sender.activityEnabled = newState;
+            UpsateModState(sender);
+        }
 
+        public void UpsateModState(DiscordInstance sender)
+        {
+            if (Config.Instance.ModStates.ContainsKey(sender.settings.modId))
+                Config.Instance.ModStates[sender.settings.modId] = new ModState() { Active = sender.activityEnabled, Priority = sender.Priority };
+            else
+                Config.Instance.ModStates.Add(sender.settings.modId, new ModState() { Active = sender.activityEnabled, Priority = sender.Priority });
+            Config.Instance.Save();
         }
 
         public class ModListObject
@@ -107,9 +123,11 @@ namespace DiscordCore
 
             private DiscordInstance modInstance;
 
+            [UIParams]
+            private BSMLParserParams parserParams;
+
             [UIComponent("mod-name")]
             private TextMeshProUGUI modName;
-
             [UIComponent("mod-icon")]
             private Image modIcon;
 
@@ -119,14 +137,19 @@ namespace DiscordCore
             public ModListObject(DiscordInstance instance)
             {
                 modInstance = instance;
+                enableMod = modInstance.activityEnabled;
             }
 
             public void ReplaceModInstance(DiscordInstance instance)
             {
                 modInstance = instance;
+                enableMod = modInstance.activityEnabled;
 
                 if (modIcon != null && modName != null)
+                {
                     Refresh(false, false);
+                    parserParams.EmitEvent("cancel");
+                }
             }
 
             [UIAction("refresh-visuals")]

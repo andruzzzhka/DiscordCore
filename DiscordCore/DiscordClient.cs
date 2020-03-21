@@ -38,10 +38,10 @@ namespace DiscordCore
                     if (_discordClient != null)
                     {
                         var oldActManager = _discordClient.GetActivityManager();
-                        oldActManager.OnActivityInvite -= OnActivityInvite;
+                        oldActManager.OnActivityInvite -= HandleActivityInvite;
                         oldActManager.OnActivityJoin -= OnActivityJoin;
-                        oldActManager.OnActivityJoinRequest -= OnActivityJoinRequest;
-                        oldActManager.OnActivitySpectate -= OnActivitySpectate;
+                        oldActManager.OnActivityJoinRequest -= HandleActivityJoinRequest;
+                        oldActManager.OnActivitySpectate -= HandleActivitySpectate;
 
                         _discordClient.Dispose();
                     }
@@ -52,10 +52,10 @@ namespace DiscordCore
                     _discordClient.SetLogHook(LogLevel.Debug, LogCallback);
 
                     var newActManager = _discordClient.GetActivityManager();
-                    newActManager.OnActivityInvite += OnActivityInvite;
+                    newActManager.OnActivityInvite += HandleActivityInvite;
                     newActManager.OnActivityJoin += OnActivityJoin;
-                    newActManager.OnActivityJoinRequest += OnActivityJoinRequest;
-                    newActManager.OnActivitySpectate += OnActivitySpectate;
+                    newActManager.OnActivityJoinRequest += HandleActivityJoinRequest;
+                    newActManager.OnActivitySpectate += HandleActivitySpectate;
                     newActManager.RegisterSteam(620980);
                 }
                 catch (ResultException e)
@@ -69,6 +69,25 @@ namespace DiscordCore
                     Plugin.deactivationReason = e.ToString();
                 }
             }
+        }
+
+
+        private static void HandleActivityInvite(ActivityActionType type, ref User user, ref Activity activity)
+        {
+            if (Config.Instance.AllowInvites)
+                OnActivityInvite?.Invoke(type, ref user, ref activity);
+        }
+
+        private static void HandleActivityJoinRequest(ref User user)
+        {
+            if (Config.Instance.AllowJoin)
+                OnActivityJoinRequest?.Invoke(ref user);
+        }
+
+        private static void HandleActivitySpectate(string secret)
+        {
+            if (Config.Instance.AllowSpectate)
+                OnActivitySpectate?.Invoke(secret);
         }
 
 

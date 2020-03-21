@@ -8,7 +8,7 @@
   <settings-submenu text='Change rich presence priorities'>
     <clickable-text text='Back' click-event='back' anchor-min-y='0.9' anchor-max-y='0.9' anchor-pos-y='0'/>
 
-    <custom-list visible-cells='5' cell-size='7' id='mods-list' contents='mods' anchor-min-x='0.05' anchor-max-x='0.95' size-delta-x='0' anchor-min-y='0.2' anchor-max-y='0.8' size-delta-y='0'>
+    <custom-list visible-cells='5' cell-size='7' id='mods-list' contents='mods' anchor-min-x='0.05' anchor-max-x='1.175' size-delta-x='0' anchor-min-y='0.2' anchor-max-y='0.8' size-delta-y='0'>
 
       <horizontal child-expand-width='true' vertical-fit='Unconstrained' horizontal-fit='Unconstrained' spacing='2' pad-bottom='1'>
         <horizontal child-expand-width='true' vertical-fit='Unconstrained' horizontal-fit='Unconstrained'>

@@ -31,11 +31,13 @@ namespace DiscordCore
         public int Priority { get; internal set; }
 
         internal bool activityValid;
+        internal bool activityEnabled;
         internal Activity activity;
 
         public DiscordInstance(DiscordSettings settings)
         {
             this.settings = settings;
+            activityEnabled = true;
 
             Priority = 0;
         }

@@ -1,5 +1,6 @@
 ﻿using BeatSaberMarkupLanguage.Settings;
 using BS_Utils.Utilities;
+using DiscordCore.UI;
 using IPA;
 using System;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ namespace DiscordCore
         public void Init(IPA.Logging.Logger log)
         {
             Plugin.log = log;
+            Config.Load();
         }
 
         public void OnActiveSceneChanged(Scene prevScene, Scene nextScene)
@@ -32,15 +34,16 @@ namespace DiscordCore
 
         public void OnApplicationQuit()
         {
-
+            Config.Instance.Save();
         }
 
         public void OnApplicationStart()
         {
-            BSEvents.menuSceneLoadedFresh += BSEvents_menuSceneLoadedFresh;
+            BSEvents.menuSceneLoadedFresh += MenuSceneLoadedFresh;
+
         }
 
-        private void BSEvents_menuSceneLoadedFresh()
+        private void MenuSceneLoadedFresh()
         {
             BSMLSettings.instance.AddSettingsMenu("DiscordCore", "DiscordCore.UI.SettingsViewController.bsml", Settings.instance);
         }
