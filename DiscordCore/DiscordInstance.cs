@@ -56,7 +56,7 @@ namespace DiscordCore
 
         public void DestroyInstance()
         {
-            DiscordManager.Instance.DestroyInstance(this);
+            DiscordManager.instance.DestroyInstance(this);
         }
 
         internal void CallActivityJoin(string secret) { OnActivityJoin?.Invoke(secret); }

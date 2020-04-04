@@ -1,8 +1,8 @@
 {
     "$schema": "https://github.com/nike4613/BSIPA-MetadataFileSchema/master/Schema.json",
     "author": "andruzzzhka",
-    "description": "A Discord integration library",
-    "gameVersion": "1.7.0",
+    "description": "A plugin for Discord integration in Beat Saber",
+    "gameVersion": "1.8.0",
     "id": "DiscordCore",
     "name": "DiscordCore",
     "version": "1.0.0",
