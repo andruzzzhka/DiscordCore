@@ -38,9 +38,9 @@ namespace DiscordCore.UI
             {
                 try
                 {
-                    var instances = DiscordManager.Instance._activeInstances.OrderBy(y => y.Priority);
+                    var instances = DiscordManager.instance._activeInstances.OrderBy(y => y.Priority);
 
-                    if (modObjectsList.Count != DiscordManager.Instance._activeInstances.Count)
+                    if (modObjectsList.Count != DiscordManager.instance._activeInstances.Count)
                     {
                         modObjectsList.Clear();
 
@@ -72,7 +72,7 @@ namespace DiscordCore.UI
 
         private void ListObject_increasePriorityPressed(DiscordInstance sender)
         {
-            var nextInstance = DiscordManager.Instance._activeInstances.OrderByDescending(x => x.Priority).FirstOrDefault(x => x.Priority < sender.Priority);
+            var nextInstance = DiscordManager.instance._activeInstances.OrderByDescending(x => x.Priority).FirstOrDefault(x => x.Priority < sender.Priority);
 
             if (nextInstance != null)
             {
@@ -87,7 +87,7 @@ namespace DiscordCore.UI
 
         private void ListObject_decreasePriorityPressed(DiscordInstance sender)
         {
-            var prevInstance = DiscordManager.Instance._activeInstances.OrderBy(x => x.Priority).FirstOrDefault(x => x.Priority > sender.Priority);
+            var prevInstance = DiscordManager.instance._activeInstances.OrderBy(x => x.Priority).FirstOrDefault(x => x.Priority > sender.Priority);
 
             if (prevInstance != null)
             {
