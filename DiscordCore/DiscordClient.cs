@@ -140,6 +140,25 @@ namespace DiscordCore
         }
 
 
+        private static void HandleActivityInvite(ActivityActionType type, ref User user, ref Activity activity)
+        {
+            if (Config.Instance.AllowInvites)
+                OnActivityInvite?.Invoke(type, ref user, ref activity);
+        }
+
+        private static void HandleActivityJoinRequest(ref User user)
+        {
+            if (Config.Instance.AllowJoin)
+                OnActivityJoinRequest?.Invoke(ref user);
+        }
+
+        private static void HandleActivitySpectate(string secret)
+        {
+            if (Config.Instance.AllowSpectate)
+                OnActivitySpectate?.Invoke(secret);
+        }
+
+
         private static void LogCallback(LogLevel level, string message)
         {
             Plugin.log.Log(_logLevels[level], $"[DISCORD] {message}");

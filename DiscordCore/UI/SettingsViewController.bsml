@@ -1,0 +1,30 @@
+﻿<settings-container>
+
+  <checkbox text='Enable DiscordCore' value='enable-plugin' apply-on-change='true' />
+  <checkbox text='Allow join requests' value='allow-join' apply-on-change='true' />
+  <checkbox text='Allow spectator requests' value='allow-spectator' apply-on-change='true' />
+  <checkbox text='Allow invites' value='allow-invites' apply-on-change='true' />
+
+  <settings-submenu text='Change rich presence priorities'>
+    <clickable-text text='Back' click-event='back' anchor-min-y='0.9' anchor-max-y='0.9' anchor-pos-y='0'/>
+
+    <custom-list visible-cells='5' cell-size='7' id='mods-list' contents='mods' anchor-min-x='0.05' anchor-max-x='1.175' size-delta-x='0' anchor-min-y='0.2' anchor-max-y='0.8' size-delta-y='0'>
+
+      <horizontal child-expand-width='true' vertical-fit='Unconstrained' horizontal-fit='Unconstrained' spacing='2' pad-bottom='1'>
+        <horizontal child-expand-width='true' vertical-fit='Unconstrained' horizontal-fit='Unconstrained'>
+          <img id='mod-icon' pref-width='10' preserve-aspect='true'/>
+          <text id='mod-name' align='MidlineLeft' font-size='5' />
+        </horizontal>
+
+        <horizontal child-expand-width='true' vertical-fit='Unconstrained' horizontal-fit='PreferredSize' spacing='1'>
+          <page-button dir='Up' on-click='increase-priority' pref-width='8'/>
+          <page-button dir='Down' on-click='decrease-priority' pref-width='8'/>
+          <checkbox text='' value='enable-mod' apply-on-change='true' on-change='active-state-changed' pref-width='6'/>
+        </horizontal>
+      </horizontal>
+
+    </custom-list>
+
+  </settings-submenu>
+
+</settings-container>
