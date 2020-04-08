@@ -1,4 +1,5 @@
-﻿using Discord;
+﻿using BeatSaberMarkupLanguage.Settings;
+using Discord;
 using DiscordCore.UI;
 using System;
 using System.Collections.Generic;
@@ -122,6 +123,8 @@ namespace DiscordCore
             try
             {
                 DiscordClient.Enable();
+                BSMLSettings.instance.RemoveSettingsMenu(Settings.instance);
+                BSMLSettings.instance.AddSettingsMenu("Discord Core", "DiscordCore.UI.SettingsViewController.bsml", Settings.instance);
             }
             catch (ResultException e)
             {
